@@ -1,6 +1,11 @@
 .App {
   text-align: center;
 }
+/* App.css */
+.custom-switch .form-check-input:checked {
+    background-color: blueviolet;
+    border-color: blueviolet;
+}
 
 .App-logo {
   height: 40vmin;

@@ -1,0 +1,12 @@
+{
+  "ctrl-fn-1": {
+    "id": "ctrl-fn-1",
+    "status": "off",
+    "empty": true
+  },
+  "ctrl-fn-2": {
+    "id": "ctrl-fn-2",
+    "status": "on",
+    "empty": false
+  }
+}

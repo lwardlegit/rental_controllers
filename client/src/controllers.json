@@ -1,0 +1,8 @@
+{
+  "controller-01": {
+    "houseName": "Wildfire Lodge",
+    "id": "controller-01",
+    "status": "on",
+    "empty": false
+  }
+}
