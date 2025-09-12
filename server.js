@@ -57,18 +57,27 @@ function saveControllers(data) {
 
 
 // API: Send reset command to a controller
-app.post("/trash/reset", (req, res) => {
-    const { controllerId } = req.body;   // ✅ match React body
+app.post("/trash/command", (req, res) => {
+    const {controllerId, command} = req.body;   // ✅ match React body
     const ws = controllers[controllerId];
     console.log(req.body);
 
-    if (ws && ws.readyState === WebSocket.OPEN) {
-       // ws.send(JSON.stringify({ command: "reset" }));
-        resetControllerById(ws)
-        res.json({ success: true, message: `Reset command sent to ${controllerId}` });
-    } else {
-        res.status(404).json({ success: false, message: "Controller not connected" });
+    if (command === "reset") {
+        if (ws && ws.readyState === WebSocket.OPEN) {
+             ws.send(JSON.stringify({ command: "reset" }));
+            res.json({success: true, message: `Reset command sent to ${controllerId}`});
+        } else {
+            res.status(404).json({success: false, message: "Controller not connected"});
+        }
+    } else if(command === "off") {
+        if (ws && ws.readyState === WebSocket.OPEN) {
+            ws.send(JSON.stringify({ command: "off" }));
+            res.json({success: true, message: `Off command sent to ${controllerId}`});
+        } else {
+            res.status(404).json({success: false, message: "Controller not connected"});
+        }
     }
+
 });
 
 
@@ -136,5 +145,6 @@ server.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
 });
 
-module.exports = { app, server };
+module.exports = { app, server, controllers };
+
 

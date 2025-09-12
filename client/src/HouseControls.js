@@ -6,16 +6,18 @@ function HouseControls() {
     // Initialize state with JSON data
     const [houses, setHouses] = useState(Object.values(controllersData));
 
-    const handleResetTrash = async (controllerId) => {
+    const executeCommand = async (controllerId, command) => {
+
         try {
-            const res = await fetch("http://localhost:5000/trash/reset", {
+            const res = await fetch("http://localhost:5000/trash/command", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ controllerId }),
+                body: JSON.stringify({ controllerId, command }),
             });
             const data = await res.json();
             console.log("Server response:", data);
-        } catch (err) {
+        }
+        catch (err) {
             console.error("Error sending reset command:", err);
             alert("Failed to reset controller — check server connection.");
         }
@@ -30,24 +32,24 @@ function HouseControls() {
                         <div className="col-4 text-start">{house.houseName}</div>
 
                         <div className="col-4">
-                            <p>trash</p>
+                            <p>trash reset</p>
                             <Form.Check
                                 type="switch"
-                                id={`trash-${index}`}
+                                id={`reset-${index}`}
                                 className="custom-switch"
                                 checked={house.status === "on"}
-                                onChange={() => handleResetTrash(house.id)}
+                                onChange={() => executeCommand(house.id, "reset")}
                             />
                         </div>
 
                         <div className="col-4">
-                            <p>hot tub</p>
+                            <p>trash off</p>
                             <Form.Check
                                 type="switch"
-                                id={`hottub-${index}`}
+                                id={`off-${index}`}
                                 className="custom-switch"
                                 checked={!house.empty}
-                                onChange={() => handleResetTrash(house.id)}
+                                onChange={() => executeCommand(house.id, "off")}
                             />
                         </div>
                     </div>
