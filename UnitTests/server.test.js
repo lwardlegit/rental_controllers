@@ -3,23 +3,29 @@ const WebSocket = require("ws");
 const fs = require("fs");
 const path = require("path");
 
-// Import server
 let server;
 let app;
+let controllers;
 
 beforeAll(() => {
-    jest.spyOn(fs, "writeFileSync").mockImplementation(() => {}); // prevent real file writes
-    jest.spyOn(fs, "existsSync").mockReturnValue(false); // pretend no file at startup
+    // Prevent real filesystem interactions
+    jest.spyOn(fs, "writeFileSync").mockImplementation(() => {});
+    jest.spyOn(fs, "existsSync").mockReturnValue(false);
     jest.spyOn(fs, "readFileSync").mockImplementation(() => "{}");
 
-    // Import after mocks
+    // Import server AFTER mocks
     const srvModule = require("../server");
     server = srvModule.server;
     app = srvModule.app;
+    controllers = srvModule.controllers;
 });
 
 afterAll((done) => {
-    server.close(done);
+    if (server && server.close) {
+        server.close(done);
+    } else {
+        done();
+    }
 });
 
 describe("REST API", () => {
@@ -29,13 +35,53 @@ describe("REST API", () => {
         expect(res.body).toEqual({});
     });
 
-    it("POST /trash/reset with unknown controller should return 404", async () => {
+    it("POST /trash/command with unknown controller should return 404", async () => {
         const res = await request(app)
-            .post("/trash/reset")
-            .send({ controllerId: "abc123" });
+            .post("/trash/command")
+            .send({ controllerId: "abc123", command: "reset" });
 
         expect(res.statusCode).toBe(404);
         expect(res.body.success).toBe(false);
+    });
+
+    it("POST /trash/command with known controller for 'reset' command happy path", async () => {
+        const fakeWs = {
+            readyState: WebSocket.OPEN,
+            send: jest.fn(),
+        };
+
+        controllers["ctrl1"] = fakeWs;
+
+        const res = await request(app)
+            .post("/trash/command")
+            .send({ controllerId: "ctrl1", command: "reset" });
+
+        expect(res.status).toBe(200);
+        expect(res.body.message).toBe("Reset command sent to ctrl1");
+        expect(res.body.success).toBe(true);
+        expect(fakeWs.send).toHaveBeenCalledWith(
+            JSON.stringify({ command: "reset" })
+        );
+    });
+
+    it("POST /trash/command with known controller for 'off' command happy path", async () => {
+        const fakeWs = {
+            readyState: WebSocket.OPEN,
+            send: jest.fn(),
+        };
+
+        controllers["ctrl1"] = fakeWs;
+
+        const res = await request(app)
+            .post("/trash/command")
+            .send({ controllerId: "ctrl1", command: "off" }); // ✅ FIXED
+
+        expect(res.status).toBe(200);
+        expect(res.body.message).toBe("Off command sent to ctrl1");
+        expect(res.body.success).toBe(true);
+        expect(fakeWs.send).toHaveBeenCalledWith(
+            JSON.stringify({ command: "off" })
+        );
     });
 });
 
@@ -48,7 +94,7 @@ describe("WebSocket handling", () => {
     });
 
     afterEach(() => {
-        if (wsClient.readyState === WebSocket.OPEN) {
+        if (wsClient && wsClient.readyState === WebSocket.OPEN) {
             wsClient.close();
         }
     });
@@ -70,12 +116,17 @@ describe("WebSocket handling", () => {
 
         // Step 2: Send event
         setTimeout(() => {
-            wsClient.send(JSON.stringify({ type: "event", id: "ctrl2", message: "trash detected" }));
+            wsClient.send(
+                JSON.stringify({
+                    type: "event",
+                    id: "ctrl2",
+                    message: "trash detected",
+                })
+            );
         }, 50);
 
-        // Listen to logs
+        // Step 3: Verify fs.writeFileSync was called
         setTimeout(() => {
-            const controllersFile = path.join(__dirname, "controllers.json");
             expect(fs.writeFileSync).toHaveBeenCalled();
             done();
         }, 100);
