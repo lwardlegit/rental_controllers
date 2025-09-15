@@ -13,6 +13,9 @@ const NavBar = () => {
                 {!user && (
                     <Link to="/login" style={styles.link}>Login</Link>
                 )}
+                {!user && (
+                    <Link to="/signup" style={styles.link}>Sign up</Link>
+                )}
 
                 {user && (
                     <>
