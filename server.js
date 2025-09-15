@@ -2,20 +2,21 @@ const express = require("express");
 const http = require("http");
 const WebSocket = require("ws");
 const path = require("path");
+require("dotenv").config();
 
 const app = express();
 const server = http.createServer(app);
 const wss = new WebSocket.Server({ server });
 const fs = require("fs");
 const cors = require("cors");
+const routes = require("./routes");
 
-
-// need to make arduino command work for OFF
 
 // Middleware to parse JSON
 app.use(express.json());
 
 app.use(cors({ origin: "http://localhost:3000" }));
+app.use("/api", routes);
 
 // Serve React build (later when you add UI)
 app.use(express.static(path.join(__dirname, "client/build")));

@@ -1,22 +1,32 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "./AuthContext";
 
 const SignupPage = () => {
     const [username, setUsername] = useState("");
+    const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
-    const { register } = useAuth();
     const navigate = useNavigate();
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
 
-        const success = register(username, password);
-        if (success) {
-            alert("Signup successful! You can now log in.");
-            navigate("/login");
-        } else {
-            alert("Username already exists. Please choose another.");
+        try {
+            const response = await fetch("http://localhost:5000/api/users", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ username,email, password }),
+            });
+
+            if (response.ok) {
+                alert("Signup successful! You can now log in.");
+                navigate("/login");
+            } else {
+                const { error } = await response.json();
+                alert("Signup failed: " + error.statusCode + error.message);
+            }
+        } catch (err) {
+            console.error(err);
+            alert("An error occurred. Please try again."+ err.statusCode + err.message);
         }
     };
 
@@ -29,6 +39,14 @@ const SignupPage = () => {
                     placeholder="Choose a Username"
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
+                    required
+                    style={styles.input}
+                />
+                <input
+                    type="email"
+                    placeholder="Choose a email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
                     required
                     style={styles.input}
                 />
