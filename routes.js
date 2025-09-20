@@ -8,14 +8,22 @@ const router = express.Router();
 
 // Create user
 router.post("/users", async (req, res) => {
-    const { username, email } = req.body;
-    const { data, error } = await supabase
-        .from("users")
-        .insert([{ username, email }])
-        .select();
+    const { username, email, password } = req.body;
+    // Create user in auth.users
+    const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+            data: { username } // stores in user_metadata
+        }
+    });
 
-    if (error) return res.status(400).json({ error: error.message });
-    res.json(data);
+    if (error) {
+        return res.status(400).json({ error: error.message });
+    }
+
+    res.json({ user: data.user });
+
 });
 
 // Get all users
@@ -34,6 +42,21 @@ router.get("/users/:id", async (req, res) => {
     if (error) return res.status(400).json({ error: error.message });
     res.json(data);
 });
+
+router.post("/users/login", async (req, res) => {
+    const { email, password } = req.body;
+    const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+    });
+
+    if (error) {
+        setError(error.message);
+    } else {
+        res.json({ user: data.user });
+        // you now have a session token you can use for authenticated requests
+    }
+})
 
 // Update user
 router.put("/users/:id", async (req, res) => {
