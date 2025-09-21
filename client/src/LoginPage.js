@@ -26,9 +26,10 @@ const LoginPage = () => {
             const data = await response.json(); // 👈 parse JSON
 
             // WE NEED TO CHANGE THIS TO SOMETHING THAT ISNT USER IN THE FUTURE
-            localStorage.setItem("session", JSON.stringify(data.user));
+            localStorage.setItem("session", JSON.stringify(data));
 
-            navigate("/dashboard");
+
+            navigate("/dashboard", { state: { controllers: data.controllers } });
         } catch (err) {
             setError(err.message || "Login failed");
         }

@@ -8,22 +8,28 @@ import "bootstrap/dist/css/bootstrap.min.css";
 import NavBar from "./NavBar";
 import SignupPage from "./SignupPage";
 import {useEffect, useState} from "react";
+import { useLocation } from "react-router-dom";
 
 function App() {
     const [session, setSession] = useState(null);
     const [loading, setLoading] = useState(true);
     const navigate = useNavigate();
+    const location = useLocation();
 
     useEffect(() => {
-        // Look for a saved session in localStorage
         const savedSession = localStorage.getItem("session");
         if (savedSession) {
             setSession(JSON.parse(savedSession));
-        }else{
-            navigate('/login')
+            if (location.pathname === "/login" || location.pathname === "/") {
+                navigate("/dashboard");
+            }
+        } else {
+            if (location.pathname !== "/login" && location.pathname !== "/signup") {
+                navigate("/login");
+            }
         }
         setLoading(false);
-    }, []);
+    }, [location.pathname, navigate]);
 
     if (loading) {
         return <p>Loading...</p>; // show spinner if you want
@@ -40,7 +46,7 @@ function App() {
                 <Route
                     path="/dashboard"
                     element={
-                        <ProtectedRoute>
+                        <ProtectedRoute session={session}>
                             <div className="container mt-5">
                             <HouseControls />
                             </div>

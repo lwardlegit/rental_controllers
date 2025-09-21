@@ -53,7 +53,14 @@ router.post("/users/login", async (req, res) => {
     if (error) {
         setError(error.message);
     } else {
-        res.json({ user: data.user });
+        const { data: controllers, error: controllerError } = await supabase
+            .from("trash_controllers")
+            .select("*")
+            .eq("email", email);
+
+        if (error) return res.status(400).json({ error: error.message });
+
+        res.json({ data: data.session.access_token, controllers: data.controllers });
         // you now have a session token you can use for authenticated requests
     }
 })
@@ -86,28 +93,11 @@ router.delete("/users/:id", async (req, res) => {
 
 // Create controller
 router.post("/controllers", async (req, res) => {
-    const { name, location, user_id } = req.body;
+    const { house_name, email } = req.body;
     const { data, error } = await supabase
         .from("trash_controllers")
-        .insert([{ name, location, user_id }])
+        .insert([{ house_name, email }])
         .select();
-
-    if (error) return res.status(400).json({ error: error.message });
-    res.json(data);
-});
-
-// Get all controllers
-router.get("/controllers", async (req, res) => {
-    const { data, error } = await supabase.from("trash_controllers").select("*");
-
-    if (error) return res.status(400).json({ error: error.message });
-    res.json(data);
-});
-
-// Get controller by id
-router.get("/controllers/:id", async (req, res) => {
-    const { id } = req.params;
-    const { data, error } = await supabase.from("trash_controllers").select("*").eq("id", id).single();
 
     if (error) return res.status(400).json({ error: error.message });
     res.json(data);
