@@ -3,6 +3,7 @@ import Form from "react-bootstrap/Form";
 import controllersData from "./controllers.json";
 import {Button, Modal} from "react-bootstrap";
 import {useNavigate} from "react-router-dom"; // adjust path
+import { useLocation } from "react-router-dom";
 
 function HouseControls() {
     // Initialize state with JSON data
@@ -11,6 +12,8 @@ function HouseControls() {
     const [formData, setFormData] = useState({ id: "", houseName: "" });
     const [session, setSession] = useState(null);
     const navigate = useNavigate();
+    const location = useLocation();
+    const controllers = location.state?.controllers || [];
 
     useEffect(() => {
         try {
@@ -33,15 +36,36 @@ function HouseControls() {
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
-        setFormData((prev) => ({ ...prev, [name]: value }));
+        setFormData((prev) => ({
+            ...prev,
+            [name]: value, // keep other fields
+        }));
     };
 
-    const handleFormSubmit = (e) => {
+    const handleFormSubmit = async (e) => {
         e.preventDefault();
-        const newHouse = { ...formData, status: "off", empty: true };
-        setHouses((prev) => [...prev, newHouse]);
-        setFormData({ id: "", houseName: "" });
-        toggleModal();
+
+        try {
+            const payload = {
+                house_name: formData.houseName,
+                email: session.email, // always pull fresh from session
+            };
+
+            const res = await fetch("http://localhost:5000/api/controllers", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload),
+            });
+
+            if (!res.ok) throw new Error("Failed to save house");
+
+            // clear form after successful submit
+            setFormData({ houseName: "", email: session?.email });
+
+            toggleModal();
+        } catch (err) {
+            console.error(err);
+        }
     };
     const executeCommand = async (controllerId, command) => {
 
@@ -75,17 +99,6 @@ function HouseControls() {
                 <Modal.Body>
                     <Form onSubmit={handleFormSubmit}>
                         <Form.Group className="mb-3">
-                            <Form.Label>Controller ID</Form.Label>
-                            <Form.Control
-                                type="text"
-                                placeholder="id"
-                                name="id"
-                                value={formData.id}
-                                onChange={handleInputChange}
-                            />
-                        </Form.Group>
-
-                        <Form.Group className="mb-3">
                             <Form.Label>House Name</Form.Label>
                             <Form.Control
                                 type="text"
@@ -105,10 +118,10 @@ function HouseControls() {
 
             {/* Houses list */}
 
-            {houses.map((house, index) => (
+            {controllers.map((house, index) => (
                 <div key={house.id}>
                     <div className="row align-items-center text-center my-2">
-                        <div className="col-4 text-start">{house.houseName}</div>
+                        <div className="col-4 text-start">{house.house_name}</div>
 
                         <div className="col-4">
                             <p>trash reset</p>
