@@ -1,25 +1,29 @@
-import {useEffect, useState} from "react";
+import { useEffect, useState } from "react";
 import Form from "react-bootstrap/Form";
-import controllersData from "./controllers.json";
-import {Button, Modal} from "react-bootstrap";
-import {useNavigate} from "react-router-dom"; // adjust path
-import { useLocation } from "react-router-dom";
+import { Button, Modal } from "react-bootstrap";
+import { useNavigate, useLocation } from "react-router-dom";
 
 function HouseControls() {
-    // Initialize state with JSON data
-    const [houses, setHouses] = useState(Object.values(controllersData));
+    const [controllers, setControllers] = useState([]);   // ✅ use DB controllers only
     const [showModal, setShowModal] = useState(false);
-    const [formData, setFormData] = useState({ id: "", houseName: "" });
+    const [formData, setFormData] = useState({ houseName: "" });
     const [session, setSession] = useState(null);
     const navigate = useNavigate();
     const location = useLocation();
-    const controllers = location.state?.controllers || [];
 
     useEffect(() => {
         try {
             const stored = localStorage.getItem("session");
             if (stored) {
-                setSession(JSON.parse(stored));
+                const parsed = JSON.parse(stored);
+                setSession(parsed);
+
+                // Prefer controllers from navigation, fallback to session
+                if (location.state?.controllers) {
+                    setControllers(location.state.controllers);
+                } else if (parsed.controllers) {
+                    setControllers(parsed.controllers);
+                }
             } else {
                 navigate("/login"); // no session → send back to login
             }
@@ -27,19 +31,16 @@ function HouseControls() {
             console.error("Invalid session in storage:", err);
             navigate("/login");
         }
-    }, [navigate]);
+    }, [navigate, location.state]);
 
-    if (!session) return null; // or a loading spinner
+    if (!session) return null; // show nothing until session loads
 
 
     const toggleModal = () => setShowModal(!showModal);
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
-        setFormData((prev) => ({
-            ...prev,
-            [name]: value, // keep other fields
-        }));
+        setFormData((prev) => ({ ...prev, [name]: value }));
     };
 
     const handleFormSubmit = async (e) => {
@@ -48,27 +49,33 @@ function HouseControls() {
         try {
             const payload = {
                 house_name: formData.houseName,
-                email: session.email, // always pull fresh from session
+                email: session.data.user.email,
             };
 
-            const res = await fetch("http://localhost:5000/api/controllers", {
+            const res = await fetch("http://localhost:5000/api/controllers/create", {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
+                headers: {
+                    "Content-Type": "application/json",
+                },
                 body: JSON.stringify(payload),
             });
 
             if (!res.ok) throw new Error("Failed to save house");
 
-            // clear form after successful submit
-            setFormData({ houseName: "", email: session?.email });
+            const newController = await res.json();
 
+            // ✅ add new controller to state
+            setControllers((prev) => [...prev, ...newController.controllers]);
+
+            // clear form after successful submit
+            setFormData({ houseName: "" });
             toggleModal();
         } catch (err) {
             console.error(err);
         }
     };
-    const executeCommand = async (controllerId, command) => {
 
+    const executeCommand = async (controllerId, command) => {
         try {
             const res = await fetch("http://localhost:5000/trash/command", {
                 method: "POST",
@@ -77,13 +84,11 @@ function HouseControls() {
             });
             const data = await res.json();
             console.log("Server response:", data);
-        }
-        catch (err) {
-            console.error("Error sending reset command:", err);
-            alert("Failed to reset controller — check server connection.");
+        } catch (err) {
+            console.error("Error sending command:", err);
+            alert("Failed to send command — check server connection.");
         }
     };
-
 
     return (
         <>
@@ -116,12 +121,11 @@ function HouseControls() {
                 </Modal.Body>
             </Modal>
 
-            {/* Houses list */}
-
-            {controllers.map((house, index) => (
-                <div key={house.id}>
+            {/* Controllers list */}
+            {controllers.map((controller, index) => (
+                <div key={controller.id}>
                     <div className="row align-items-center text-center my-2">
-                        <div className="col-4 text-start">{house.house_name}</div>
+                        <div className="col-4 text-start">{controller.house_name}</div>
 
                         <div className="col-4">
                             <p>trash reset</p>
@@ -129,8 +133,8 @@ function HouseControls() {
                                 type="switch"
                                 id={`reset-${index}`}
                                 className="custom-switch"
-                                checked={house.status === "on"}
-                                onChange={() => executeCommand(house.id, "reset")}
+                                checked={controller.status === "on"}
+                                onChange={() => executeCommand(controller.id, "reset")}
                             />
                         </div>
 
@@ -140,8 +144,8 @@ function HouseControls() {
                                 type="switch"
                                 id={`off-${index}`}
                                 className="custom-switch"
-                                checked={!house.empty}
-                                onChange={() => executeCommand(house.id, "off")}
+                                checked={!controller.empty}
+                                onChange={() => executeCommand(controller.id, "off")}
                             />
                         </div>
                     </div>

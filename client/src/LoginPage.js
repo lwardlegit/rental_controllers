@@ -19,21 +19,30 @@ const LoginPage = () => {
                 body: JSON.stringify({ email, password }),
             });
 
-            if (!response.ok) {
-                throw new Error("Login failed");
-            }
+            if (!response.ok) throw new Error("Login failed");
 
-            const data = await response.json(); // 👈 parse JSON
+            const userData = await response.json();
 
-            // WE NEED TO CHANGE THIS TO SOMETHING THAT ISNT USER IN THE FUTURE
-            localStorage.setItem("session", JSON.stringify(data));
+            // fetch controllers for this user
+            const ctrlRes = await fetch("http://localhost:5000/api/controllers", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ email }),
+            });
 
+            const ctrlData = await ctrlRes.json();
 
-            navigate("/dashboard", { state: { controllers: data.controllers } });
+            // merge controllers into session
+            const sessionData = { ...userData, controllers: ctrlData.controllers };
+
+            localStorage.setItem("session", JSON.stringify(sessionData));
+
+            navigate("/dashboard", { state: { controllers: sessionData.controllers } });
         } catch (err) {
             setError(err.message || "Login failed");
         }
     };
+
 
 
     return (
