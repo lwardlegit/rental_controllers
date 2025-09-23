@@ -1,8 +1,12 @@
 import { Link } from "react-router-dom";
 import { useAuth } from "./AuthContext";
 
-const NavBar = () => {
+const NavBar = ({session}) => {
     const { user, signOut } = useAuth();
+
+    const logoutUser = () => {
+        localStorage.removeItem("session");
+    }
 
     return (
         <header style={styles.header}>
@@ -10,17 +14,23 @@ const NavBar = () => {
                 <Link to="/" style={styles.link}>Home</Link>
                 <Link to="/about" style={styles.link}>About</Link>
 
-                {!user && (
+                {!session && (
                     <Link to="/login" style={styles.link}>Login</Link>
                 )}
-                {!user && (
+                {!session && (
                     <Link to="/signup" style={styles.link}>Sign up</Link>
                 )}
 
-                {user && (
+                {session && (
                     <>
                         <Link to="/housecontrols" style={styles.link}>House Controls</Link>
-                        <button onClick={signOut} style={styles.button}>Logout</button>
+                        <Link to={"/login"} onClick={logoutUser} style={styles.link}>Logout</Link>
+                    </>
+                )}
+
+                {session && (
+                    <>
+                        <Link to="/profile" style={styles.link}>profile</Link>
                     </>
                 )}
             </nav>
