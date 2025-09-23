@@ -9,6 +9,7 @@ import NavBar from "./NavBar";
 import SignupPage from "./SignupPage";
 import {useEffect, useState} from "react";
 import { useLocation } from "react-router-dom";
+import ProfilePage from "./ProfilePage";
 
 function App() {
     const [session, setSession] = useState(null);
@@ -37,7 +38,7 @@ function App() {
 
     return (
         <>
-            <NavBar />
+            <NavBar session={session} />
             <Routes>
                 <Route path="/" element={<HomePage />} />
                 <Route path="/about" element={<AboutPage />} />
@@ -46,9 +47,19 @@ function App() {
                 <Route
                     path="/dashboard"
                     element={
-                        <ProtectedRoute session={session}>
+                        <ProtectedRoute session={session} >
                             <div className="container mt-5">
-                            <HouseControls />
+                            <HouseControls session={session}/>
+                            </div>
+                        </ProtectedRoute>
+                    }
+                />
+                <Route
+                    path="/profile"
+                    element={
+                        <ProtectedRoute session={session} >
+                            <div className="container mt-5">
+                                <ProfilePage session={session} />
                             </div>
                         </ProtectedRoute>
                     }

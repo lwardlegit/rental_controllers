@@ -133,5 +133,33 @@ router.post("/controllers", async (req, res) => {
     }
 });
 
+// right now we are only updating the profile picture
+router.post("/profile/update", async (req, res) => {
+    const { email, profilePic, username, company, role } = req.body;
+
+    try {
+        // update profile table based on email
+        const { data, error } = await supabase
+            .from("profile")
+            .update({
+                profile_pic: profilePic,
+                username: username,
+                company: company,
+                role: role,
+            })
+            .eq("email", email) // update the row for this email
+            .select(); // return updated row
+
+        if (error) {
+            return res.status(400).json({ error: error.message });
+        }
+
+        res.json({ profile: data });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: "Server error" });
+    }
+});
+
 
 module.exports = router;
