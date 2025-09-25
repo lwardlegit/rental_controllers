@@ -1,10 +1,20 @@
-import { useState } from "react";
+import {useEffect, useState} from "react";
 
 function ProfilePage({ session }) {
-    const [profilePic, setProfilePic] = useState(session?.profilePic || null);
-    const [username, setUsername] = useState("")
-    const [company, setCompany] = useState("")
-    const [role, setRole] = useState("")
+    const [profilePic, setProfilePic] = useState(session.profile?.picture || null);
+    const [username, setUsername] = useState(session.profile?.username || null)
+    const [company, setCompany] = useState(session.profile?.company || null)
+    const [role, setRole] = useState(session.profile?.role || null);
+
+
+    useEffect(() => {
+        if (session?.data?.profile) {
+            setProfilePic(session.data.profile[0].picture || null);
+            setUsername(session.data.profile[0].username || "");
+            setCompany(session.data.profile[0].company || "");
+            setRole(session.data.profile[0].role || "");
+        }
+    }, [session]); // re-run if session changes
 
     const handleImageChange = (e) => {
         const file = e.target.files[0];
@@ -47,20 +57,13 @@ function ProfilePage({ session }) {
 
     // needs to check everything in state and add it here
     const handleSave = () => {
-
+        const email = session?.data.user.email || ""
         try {
             fetch("http://localhost:5000/api/profile/update", {
                 method: "POST",
                 headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({profilePic, username, company, role}),
+                body: JSON.stringify({email, profilePic, username, company, role}),
             }).then((res) => res.json())
-                .then((data) => {
-                    const { profilePic, username, company, role } = data.profile[0]; // adjust if your backend wraps it differently
-                    setProfilePic(profilePic);
-                    setUsername(username);
-                    setCompany(company);
-                    setRole(role);
-                })
         } catch (error) {
             alert(error);
             throw error;
