@@ -1,10 +1,12 @@
 import {useEffect, useState} from "react";
+import './App.css'
 
 function ProfilePage({ session }) {
     const [profilePic, setProfilePic] = useState(session.profile?.picture || null);
     const [username, setUsername] = useState(session.profile?.username || null)
     const [company, setCompany] = useState(session.profile?.company || null)
     const [role, setRole] = useState(session.profile?.role || null);
+    const [deleteModal, setDeleteModal] = useState(false);
 
 
     useEffect(() => {
@@ -72,6 +74,20 @@ function ProfilePage({ session }) {
         alert("Profile updated!");
     };
 
+    const handleDelete = () => {
+        setDeleteModal(true);
+        const email = session?.data.user.email || ""
+        try {
+            fetch("http://localhost:5000/api/profile/delete", {
+                method: "POST",
+                body: JSON.stringify({email}),
+                headers: {'content-type': 'application/json'}
+            }).then(res => alert("profile deleted successfully"))
+        }catch(error) {
+            console.log(error);
+        }
+    }
+
     return (
         <div className="container mt-5">
             <h2>My Profile</h2>
@@ -128,6 +144,26 @@ function ProfilePage({ session }) {
             <button className="btn btn-primary" onClick={handleSave}>
                 Save Changes
             </button>
+
+            <div className={"dividerClass"}></div>
+
+            {/* delete profile option */}
+            <div className="mb-3">
+                <button className="btn btn-primary" onClick={()=> setDeleteModal(true)}>
+                    Delete Account
+                </button>
+            </div>
+
+            {deleteModal && (
+                <div>
+                    <p>This will delete your profile. Are you sure you want to continue?</p>
+                    <button className="btn btn-danger" onClick={handleDelete}>
+                        Yes, Delete my Account
+                    </button>
+                </div>
+            )}
+
+
         </div>
     );
 }

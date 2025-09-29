@@ -33,6 +33,11 @@
   color: #61dafb;
 }
 
+.dividerClass{
+    margin-top: 2em;
+    margin-bottom: 2em;
+}
+
 @keyframes App-logo-spin {
   from {
     transform: rotate(0deg);

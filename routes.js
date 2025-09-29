@@ -53,6 +53,16 @@ router.post("/users/login", async (req, res) => {
     if (error) {
         setError(error.message);
     } else {
+        //grab profile for session
+
+            const {data: profile, error:profileError } = await supabase
+                .from("profile")
+                .select("*")
+                .eq("email",email)
+        if (error) return res.status(400).json({ error: error.message });
+        data.session.profile = profile;
+
+        // grab controllers from session
         const { data: controllers, error: controllerError } = await supabase
             .from("trash_controllers")
             .select("*")
@@ -65,19 +75,6 @@ router.post("/users/login", async (req, res) => {
     }
 })
 
-// Update user
-router.put("/users/:id", async (req, res) => {
-    const { id } = req.params;
-    const { name, email } = req.body;
-    const { data, error } = await supabase
-        .from("users")
-        .update({ name, email })
-        .eq("id", id)
-        .select();
-
-    if (error) return res.status(400).json({ error: error.message });
-    res.json(data);
-});
 
 // Delete user
 router.delete("/users/:id", async (req, res) => {
@@ -133,7 +130,6 @@ router.post("/controllers", async (req, res) => {
     }
 });
 
-// right now we are only updating the profile picture
 router.post("/profile/update", async (req, res) => {
     const { email, profilePic, username, company, role } = req.body;
 
@@ -141,25 +137,38 @@ router.post("/profile/update", async (req, res) => {
         // update profile table based on email
         const { data, error } = await supabase
             .from("profile")
-            .update({
-                profile_pic: profilePic,
+            .insert({
+                email: email,
+                picture: profilePic,
                 username: username,
                 company: company,
                 role: role,
             })
-            .eq("email", email) // update the row for this email
             .select(); // return updated row
 
         if (error) {
             return res.status(400).json({ error: error.message });
         }
 
-        res.json({ profile: data });
+        res. json({ profile: data });
     } catch (err) {
         console.error(err);
         res.status(500).json({ error: "Server error" });
     }
 });
+
+router.post("/profile/delete",  async (req, res) => {
+    const { email } = req.body;
+    try {
+        const {data, error} = await supabase.from("profile").delete().eq("email", email);
+        res.json({ message: "user profile deleted" });
+    }catch(err) {
+        console.log(err);
+        res.status(500).json({error: "failed to delete user"})
+    }
+
+
+})
 
 
 module.exports = router;
