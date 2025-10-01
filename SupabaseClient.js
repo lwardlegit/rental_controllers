@@ -1,9 +1,15 @@
-// supabaseClient.js
 const { createClient } = require('@supabase/supabase-js');
 
-const supabase = createClient(
-    process.env.SUPABASE_URL,
-    process.env.SUPABASE_KEY,
-);
+let supabase; // don’t create immediately
 
-module.exports = supabase;
+async function getSupabase() {
+    if (!supabase) {
+        const url = process.env.SUPABASE_URL || "http://mock-url";
+        const key = process.env.SUPABASE_KEY || "mock-key";
+
+        supabase = createClient(url, key);
+    }
+    return supabase;
+}
+
+module.exports = { getSupabase };

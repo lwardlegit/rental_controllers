@@ -1,7 +1,7 @@
 // server.js or routes file
 const express = require("express");
 const supabase = require("./SupabaseClient");
-const { createClient } = require("@supabase/supabase-js");
+const { getSupabase } = require("./SupabaseClient");
 const router = express.Router();
 
 /* ---------------- USERS CRUD ---------------- */
@@ -10,6 +10,7 @@ const router = express.Router();
 router.post("/users", async (req, res) => {
     const { username, email, password } = req.body;
     // Create user in auth.users
+    const supabase = await getSupabase();
     const { data, error } = await supabase.auth.signUp({
         email,
         password,
@@ -26,58 +27,55 @@ router.post("/users", async (req, res) => {
 
 });
 
-// Get all users
-router.get("/users", async (req, res) => {
-    const { data, error } = await supabase.from("users").select("*");
 
-    if (error) return res.status(400).json({ error: error.message });
-    res.json(data);
-});
 
-// Get single user
+
+/*
+TODO://  create route with usecase for grabbing a single user from db
 router.get("/users/:id", async (req, res) => {
+    const supabase = await getSupabase();
     const { id } = req.params;
     const { data, error } = await supabase.from("users").select("*").eq("id", id).single();
 
     if (error) return res.status(400).json({ error: error.message });
     res.json(data);
 });
+ */
 
 router.post("/users/login", async (req, res) => {
-    const { email, password } = req.body;
-    const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-    });
+    try {
+        const supabase = await getSupabase();
+        const {email, password} = req.body;
+        const {data, error} = await supabase.auth.signInWithPassword({
+            email,
+            password,
+        });
+            //grab profile for session
 
-    if (error) {
-        setError(error.message);
-    } else {
-        //grab profile for session
-
-            const {data: profile, error:profileError } = await supabase
+            const {data: profile, error: profileError} = await supabase
                 .from("profile")
                 .select("*")
-                .eq("email",email)
-        if (error) return res.status(400).json({ error: error.message });
-        data.session.profile = profile;
+                .eq("email", email)
+            data.session.profile = profile;
 
-        // grab controllers from session
-        const { data: controllers, error: controllerError } = await supabase
-            .from("trash_controllers")
-            .select("*")
-            .eq("email", email);
+            // grab controllers from session
+            const {data: controllers, error: controllerError} = await supabase
+                .from("trash_controllers")
+                .select("*")
+                .eq("email", email);
 
-        if (error) return res.status(400).json({ error: error.message });
 
-        res.json({ data: data.session, controllers: data.controllers });
-        // you now have a session token you can use for authenticated requests
+            res.json(data);
+            // you now have a session token you can use for authenticated requests
+    }catch (error) {
+        return res.status(400).json({error: error.message});
     }
 })
 
 
 // Delete user
 router.delete("/users/:id", async (req, res) => {
+    const supabase = await getSupabase();
     const { id } = req.params;
     const { error } = await supabase.from("users").delete().eq("id", id);
 
@@ -94,6 +92,7 @@ router.delete("/users/:id", async (req, res) => {
         const { house_name, email } = req.body;
 
         try {
+            const supabase = await getSupabase();
             const { data, error } = await supabase
                 .from("trash_controllers")
                 .insert([{ house_name, email }])
@@ -112,8 +111,8 @@ router.delete("/users/:id", async (req, res) => {
     // get all controllers for user
 router.post("/controllers", async (req, res) => {
     const { email } = req.body;
-
     try {
+        const supabase = await getSupabase();
         const { data, error } = await supabase
             .from("trash_controllers")
             .select("*")
@@ -134,6 +133,7 @@ router.post("/profile/update", async (req, res) => {
     const { email, profilePic, username, company, role } = req.body;
 
     try {
+        const supabase = await getSupabase();
         // update profile table based on email
         const { data, error } = await supabase
             .from("profile")
@@ -160,6 +160,7 @@ router.post("/profile/update", async (req, res) => {
 router.post("/profile/delete",  async (req, res) => {
     const { email } = req.body;
     try {
+        const supabase = await getSupabase();
         const {data, error} = await supabase.from("profile").delete().eq("email", email);
         res.json({ message: "user profile deleted" });
     }catch(err) {
