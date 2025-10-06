@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
 import Form from "react-bootstrap/Form";
 import { Button, Modal } from "react-bootstrap";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router";
+import "./Dashboard.css"; // <-- make sure you save your CSS as Dashboard.css
 
 function HouseControls() {
-    const [controllers, setControllers] = useState([]);   // ✅ use DB controllers only
+    const [controllers, setControllers] = useState([]);
     const [showModal, setShowModal] = useState(false);
     const [formData, setFormData] = useState({ houseName: "" });
     const [session, setSession] = useState(null);
@@ -12,29 +13,19 @@ function HouseControls() {
     const location = useLocation();
 
     useEffect(() => {
-        try {
-            const stored = localStorage.getItem("session");
-            if (stored) {
-                const parsed = JSON.parse(stored);
-                setSession(parsed);
+        const stored = localStorage.getItem("session");
+        const parsed = stored ? JSON.parse(stored) : null;
 
-                // Prefer controllers from navigation, fallback to session
-                if (location.state?.controllers) {
-                    setControllers(location.state.controllers);
-                } else if (parsed.controllers) {
-                    setControllers(parsed.controllers);
-                }
-            } else {
-                navigate("/login"); // no session → send back to login
-            }
-        } catch (err) {
-            console.error("Invalid session in storage:", err);
+        if (!parsed || Object.keys(parsed).length === 0) {
             navigate("/login");
+        } else {
+            setSession(parsed);
         }
-    }, [navigate, location.state]);
+    }, [navigate]);
 
-    if (!session) return null; // show nothing until session loads
 
+
+    if (!session) return null;
 
     const toggleModal = () => setShowModal(!showModal);
 
@@ -45,7 +36,6 @@ function HouseControls() {
 
     const handleFormSubmit = async (e) => {
         e.preventDefault();
-
         try {
             const payload = {
                 house_name: formData.houseName,
@@ -54,20 +44,14 @@ function HouseControls() {
 
             const res = await fetch("http://localhost:5000/api/controllers/create", {
                 method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
+                headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(payload),
             });
 
             if (!res.ok) throw new Error("Failed to save house");
-
             const newController = await res.json();
 
-            // ✅ add new controller to state
             setControllers((prev) => [...prev, ...newController.controllers]);
-
-            // clear form after successful submit
             setFormData({ houseName: "" });
             toggleModal();
         } catch (err) {
@@ -91,10 +75,76 @@ function HouseControls() {
     };
 
     return (
-        <>
-            <div>
-                <Button onClick={toggleModal}>Add Controller</Button>
-            </div>
+        <div className="site-wrap">
+            {/* Sidebar */}
+            <nav className="site-nav">
+                <div className="name">
+                    {session?.data?.user?.email || "User"}
+                </div>
+
+                <ul>
+                    <li className="active">
+                        <a href="#">Dashboard</a>
+                    </li>
+                    <li>
+                        <a href="#" onClick={toggleModal}>
+                            Add Controller
+                        </a>
+                    </li>
+                    <li>
+                        <a href="/logout">Logout</a>
+                    </li>
+                </ul>
+
+                <div className="note">
+                    <h3>Status</h3>
+                    <p>{controllers.length} controllers connected</p>
+                </div>
+            </nav>
+
+            {/* Main Dashboard */}
+            <main>
+                <header>
+                    <h2>Trash Controller Dashboard</h2>
+                </header>
+
+                <section className="content-columns">
+                    {controllers.length === 0 ? (
+                        <div className="col">
+                            <h5>No controllers yet</h5>
+                            <p>Add one using the sidebar.</p>
+                        </div>
+                    ) : (
+                        controllers.map((controller, index) => (
+                            <div key={controller.id} className="col">
+                                <h5>{controller.house_name}</h5>
+
+                                <div className="item p-2 my-2">
+                                    <p>Trash Reset</p>
+                                    <Form.Check
+                                        type="switch"
+                                        id={`reset-${index}`}
+                                        className="custom-switch"
+                                        checked={controller.status === "on"}
+                                        onChange={() => executeCommand(controller.id, "reset")}
+                                    />
+                                </div>
+
+                                <div className="item p-2 my-2">
+                                    <p>Trash Off</p>
+                                    <Form.Check
+                                        type="switch"
+                                        id={`off-${index}`}
+                                        className="custom-switch"
+                                        checked={!controller.empty}
+                                        onChange={() => executeCommand(controller.id, "off")}
+                                    />
+                                </div>
+                            </div>
+                        ))
+                    )}
+                </section>
+            </main>
 
             {/* Modal */}
             <Modal show={showModal} onHide={toggleModal} centered>
@@ -120,39 +170,7 @@ function HouseControls() {
                     </Form>
                 </Modal.Body>
             </Modal>
-
-            {/* Controllers list */}
-            {controllers.map((controller, index) => (
-                <div key={controller.id}>
-                    <div className="row align-items-center text-center my-2">
-                        <div className="col-4 text-start">{controller.house_name}</div>
-
-                        <div className="col-4">
-                            <p>trash reset</p>
-                            <Form.Check
-                                type="switch"
-                                id={`reset-${index}`}
-                                className="custom-switch"
-                                checked={controller.status === "on"}
-                                onChange={() => executeCommand(controller.id, "reset")}
-                            />
-                        </div>
-
-                        <div className="col-4">
-                            <p>trash off</p>
-                            <Form.Check
-                                type="switch"
-                                id={`off-${index}`}
-                                className="custom-switch"
-                                checked={!controller.empty}
-                                onChange={() => executeCommand(controller.id, "off")}
-                            />
-                        </div>
-                    </div>
-                    <hr style={{ border: "2px solid black" }} />
-                </div>
-            ))}
-        </>
+        </div>
     );
 }
 

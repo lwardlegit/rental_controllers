@@ -23,7 +23,6 @@ const NavBar = ({session}) => {
 
                 {session && (
                     <>
-                        <Link to="/housecontrols" style={styles.link}>House Controls</Link>
                         <Link to={"/login"} onClick={logoutUser} style={styles.link}>Logout</Link>
                     </>
                 )}

@@ -25,9 +25,8 @@
     "ws": "^8.18.3"
   },
   "jest": {
-    "test": "jest --runInBand",
     "testMatch": [
-      "**/UnitTests/**/*.js",
+      "**/UnitTests/**/*.test.jsx",
       "**/FunctionalTests/**/*.test.js"
     ]
   }

@@ -59,7 +59,7 @@ function ProfilePage({ session }) {
 
     // needs to check everything in state and add it here
     const handleSave = () => {
-        const email = session?.data.user.email || ""
+        const email = session?.data?.user.email || ""
         try {
             fetch("http://localhost:5000/api/profile/update", {
                 method: "POST",
@@ -76,7 +76,7 @@ function ProfilePage({ session }) {
 
     const handleDelete = () => {
         setDeleteModal(true);
-        const email = session?.data.user.email || ""
+        const email = session?.data?.user.email || ""
         try {
             fetch("http://localhost:5000/api/profile/delete", {
                 method: "POST",
@@ -138,7 +138,7 @@ function ProfilePage({ session }) {
             {/* Email (read-only) */}
             <div className="mb-3">
                 <label className="form-label">Email</label>
-                <p>{session?.data.user.email || ""}</p>
+                <p>{session?.data?.user.email || ""}</p>
             </div>
 
             <button className="btn btn-primary" onClick={handleSave}>
