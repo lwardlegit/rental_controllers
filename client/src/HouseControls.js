@@ -10,7 +10,6 @@ function HouseControls() {
     const [formData, setFormData] = useState({ houseName: "" });
     const [session, setSession] = useState(null);
     const navigate = useNavigate();
-    const location = useLocation();
 
     useEffect(() => {
         const stored = localStorage.getItem("session");
@@ -20,12 +19,10 @@ function HouseControls() {
             navigate("/login");
         } else {
             setSession(parsed);
+            setControllers(parsed.controllers);
         }
     }, [navigate]);
 
-
-
-    if (!session) return null;
 
     const toggleModal = () => setShowModal(!showModal);
 
@@ -35,11 +32,12 @@ function HouseControls() {
     };
 
     const handleFormSubmit = async (e) => {
-        e.preventDefault();
+        e.preventDefault()
         try {
             const payload = {
                 house_name: formData.houseName,
-                email: session.data.user.email,
+                email: session.user.email,
+
             };
 
             const res = await fetch("http://localhost:5000/api/controllers/create", {
@@ -51,7 +49,7 @@ function HouseControls() {
             if (!res.ok) throw new Error("Failed to save house");
             const newController = await res.json();
 
-            setControllers((prev) => [...prev, ...newController.controllers]);
+            setControllers((prev) => [...prev, ...newController]);
             setFormData({ houseName: "" });
             toggleModal();
         } catch (err) {
@@ -88,7 +86,7 @@ function HouseControls() {
                     </li>
                     <li>
                         <a href="#" onClick={toggleModal}>
-                            Add Controller
+                            Add New Controller
                         </a>
                     </li>
                     <li>
@@ -118,6 +116,8 @@ function HouseControls() {
                         controllers.map((controller, index) => (
                             <div key={controller.id} className="col">
                                 <h5>{controller.house_name}</h5>
+                                <div className="item p-2 my-2" id="controller status">{controller?.status ? controller.status : "unknown status"}</div>
+                                <div className="item p-2 my-2" id="trash empty">{controller.empty ? "empty" : "full"}</div>
 
                                 <div className="item p-2 my-2">
                                     <p>Trash Reset</p>

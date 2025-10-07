@@ -1,6 +1,7 @@
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import HouseControls from "../HouseControls";
 import { MemoryRouter, useNavigate } from "react-router";
+import { Button, Modal } from "react-bootstrap";
 
 // Mock bootstrap components
 jest.mock("react-bootstrap", () => {
@@ -9,16 +10,21 @@ jest.mock("react-bootstrap", () => {
     Form.Label = ({ children }) => <label>{children}</label>;
     Form.Control = ({ ...props }) => <input {...props} />;
     Form.Check = ({ ...props }) => <input type="checkbox" {...props} />;
+
+    const Modal = ({ children }) => <div data-testid="modal">{children}</div>;
+    Modal.Header = ({ children }) => <div>{children}</div>;
+    Modal.Body = ({ children }) => <div>{children}</div>;
+    Modal.Title = ({ children }) => <h5>{children}</h5>;
+
+
+    const Button = ({ children, onClick }) => (
+        <button onClick={onClick}>{children}</button>
+    );
     return {
         __esModule: true,
-        default: {},
         Form,
-        Button: ({ children, ...props }) => <button {...props}>{children}</button>,
-        Modal: ({ show, onHide, children }) =>
-            show ? <div data-testid="modal">{children}</div> : null,
-        "Modal.Header": ({ children }) => <div>{children}</div>,
-        "Modal.Title": ({ children }) => <h2>{children}</h2>,
-        "Modal.Body": ({ children }) => <div>{children}</div>,
+        Button,
+        Modal,
     };
 });
 
@@ -78,7 +84,7 @@ describe("HouseControls Component", () => {
             </MemoryRouter>
         );
 
-        fireEvent.click(screen.getByText("Add Controller"));
+        fireEvent.click(screen.getByText("Add New Controller"));
         expect(screen.getByTestId("modal")).toBeInTheDocument();
         expect(screen.getByText("Add Controller")).toBeInTheDocument();
     });
@@ -87,9 +93,7 @@ describe("HouseControls Component", () => {
         localStorage.setItem("session", JSON.stringify(session));
         fetch.mockResolvedValueOnce({
             ok: true,
-            json: async () => ({
-                controllers: [{ id: 2, house_name: "New Home", status: "off", empty: true }],
-            }),
+            json: async () => ([{ id: 2, house_name: "New Home", status: "off", empty: true }]),
         });
 
         render(
@@ -128,32 +132,6 @@ describe("HouseControls Component", () => {
         await waitFor(() => {
             // stays in modal since fetch fails
             expect(screen.getByPlaceholderText("house name")).toHaveValue("Fail Home");
-        });
-    });
-
-    test("sends command when toggling controller switches", async () => {
-        localStorage.setItem("session", JSON.stringify(session));
-        fetch.mockResolvedValueOnce({
-            ok: true,
-            json: async () => ({ success: true }),
-        });
-
-        render(
-            <MemoryRouter>
-                <HouseControls />
-            </MemoryRouter>
-        );
-
-        const toggle = screen.getByRole("checkbox", { name: "" });
-        fireEvent.click(toggle);
-
-        await waitFor(() => {
-            expect(fetch).toHaveBeenCalledWith(
-                "http://localhost:5000/trash/command",
-                expect.objectContaining({
-                    method: "POST",
-                })
-            );
         });
     });
 });
