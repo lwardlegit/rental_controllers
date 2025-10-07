@@ -90,12 +90,14 @@ router.delete("/users/:id", async (req, res) => {
 
     router.post("/controllers/create", async (req, res) => {
         const { house_name, email } = req.body;
+        const status = "active";
+        const empty = true;
 
         try {
             const supabase = await getSupabase();
             const { data, error } = await supabase
                 .from("trash_controllers")
-                .insert([{ house_name, email }])
+                .insert([{ house_name, email, status, empty }])
                 .select();
 
             if (error) {
